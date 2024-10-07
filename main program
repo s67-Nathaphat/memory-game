@@ -1,0 +1,56 @@
+import tkinter as tk
+import random
+
+class MemoryGame:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Memory Game")
+        
+        self.cards = list(range(8)) * 2  # มีการ์ด 8 คู่
+        random.shuffle(self.cards)  # สุ่มการ์ด
+        self.buttons = []
+        self.first_card = None
+        self.second_card = None
+        self.first_index = None
+        self.second_index = None
+        self.flipped = 0
+
+        self.create_buttons()
+        
+    def create_buttons(self):
+        for i in range(4):
+            row = []
+            for j in range(4):
+                button = tk.Button(self.master, text='', width=5, height=2, command=lambda idx=i*4+j: self.flip_card(idx))
+                button.grid(row=i, column=j)
+                row.append(button)
+            self.buttons.append(row)
+
+    def flip_card(self, index):
+        if self.buttons[index // 4][index % 4]['text'] == '' and self.second_card is None:
+            self.buttons[index // 4][index % 4]['text'] = self.cards[index]
+            
+            if self.first_card is None:
+                self.first_card = self.cards[index]
+                self.first_index = index
+            else:
+                self.second_card = self.cards[index]
+                self.second_index = index
+                self.master.after(1000, self.check_match)
+
+    def check_match(self):
+        if self.first_card == self.second_card:
+            self.flipped += 2
+            if self.flipped == 16:
+                print("คุณชนะ!")
+        else:
+            self.buttons[self.first_index // 4][self.first_index % 4]['text'] = ''
+            self.buttons[self.second_index // 4][self.second_index % 4]['text'] = ''
+        
+        self.first_card = None
+        self.second_card = None
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = MemoryGame(root)
+    root.mainloop()
