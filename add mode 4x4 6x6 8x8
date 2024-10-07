@@ -1,0 +1,112 @@
+import tkinter as tk
+import random
+
+class MemoryGame:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Memory Game")
+        
+        # สร้างปุ่มเลือกขนาดตาราง
+        self.size_button_frame = tk.Frame(self.master)
+        self.size_button_frame.grid(row=0, column=0, columnspan=4)
+        
+        self.size_4x4_button = tk.Button(self.size_button_frame, text="4x4", command=lambda: self.reset_game(4))
+        self.size_4x4_button.pack(side=tk.LEFT)
+        
+        self.size_6x6_button = tk.Button(self.size_button_frame, text="6x6", command=lambda: self.reset_game(6))
+        self.size_6x6_button.pack(side=tk.LEFT)
+        
+        self.size_8x8_button = tk.Button(self.size_button_frame, text="8x8", command=lambda: self.reset_game(8))
+        self.size_8x8_button.pack(side=tk.LEFT)
+
+        # สร้างปุ่มเริ่มใหม่และเฉลย
+        self.start_button = tk.Button(self.master, text="เริ่มเกมใหม่", command=lambda: self.reset_game(self.grid_size))
+        self.reveal_button = tk.Button(self.master, text="เฉลย", command=self.reveal_cards)
+
+        # สร้าง label สำหรับข้อความชนะ
+        self.win_label = tk.Label(self.master, text='', font=("Arial", 14))
+        
+        # สร้าง label สำหรับนับจำนวนคู่
+        self.pairs_label = tk.Label(self.master, text='คู่ที่จับได้: 0', font=("Arial", 14))
+
+        # กำหนดขนาดเริ่มต้น
+        self.grid_size = 4  # ขนาดเริ่มต้นเป็น 4x4
+        self.reset_game(self.grid_size)
+
+    def reset_game(self, size):
+        self.grid_size = size
+        self.cards = list(range(size * size // 2)) * 2  # มีการ์ดจำนวนครึ่งหนึ่งของขนาดตาราง
+        random.shuffle(self.cards)  # สุ่มการ์ด
+        self.buttons = []
+        self.first_card = None
+        self.second_card = None
+        self.first_index = None
+        self.second_index = None
+        self.flipped = 0
+        self.pairs_found = 0  # จำนวนคู่ที่จับได้
+
+        self.create_buttons()
+        self.win_label.config(text='')  # ลบข้อความชนะเมื่อเริ่มเกมใหม่
+        self.update_pairs_label()  # อัพเดตจำนวนคู่ที่จับได้
+
+        # เลื่อนตำแหน่งปุ่มและ labels ไปด้านล่างของตาราง
+        self.start_button.grid(row=self.grid_size + 1, column=0, columnspan=2)
+        self.reveal_button.grid(row=self.grid_size + 1, column=2, columnspan=2)
+        self.win_label.grid(row=self.grid_size + 2, column=0, columnspan=4)
+        self.pairs_label.grid(row=self.grid_size + 3, column=0, columnspan=4)
+
+    def create_buttons(self):
+        # ลบปุ่มเก่าออก
+        for widget in self.master.grid_slaves():
+            if isinstance(widget, tk.Button) and widget not in [self.start_button, self.reveal_button]:
+                widget.destroy()  # ลบปุ่มเก่า
+        
+        # สร้างปุ่มใหม่
+        for i in range(self.grid_size):
+            row = []
+            for j in range(self.grid_size):
+                button = tk.Button(self.master, text='', width=5, height=2, command=lambda idx=i*self.grid_size+j: self.flip_card(idx))
+                button.grid(row=i + 1, column=j)
+                row.append(button)
+            self.buttons.append(row)
+
+    def flip_card(self, index):
+        if self.buttons[index // self.grid_size][index % self.grid_size]['text'] == '' and self.second_card is None:
+            self.buttons[index // self.grid_size][index % self.grid_size]['text'] = self.cards[index]
+            
+            if self.first_card is None:
+                self.first_card = self.cards[index]
+                self.first_index = index
+            else:
+                self.second_card = self.cards[index]
+                self.second_index = index
+                self.master.after(1000, self.check_match)
+
+    def check_match(self):
+        if self.first_card == self.second_card:
+            self.flipped += 2
+            self.pairs_found += 1  # เพิ่มจำนวนคู่ที่จับได้
+            self.update_pairs_label()  # อัพเดตจำนวนคู่ที่จับได้
+            
+            if self.pairs_found == (self.grid_size * self.grid_size) // 2:  # เช็คว่าจับคู่ครบแล้วหรือยัง
+                self.win_label.config(text="คุณชนะ!")
+        else:
+            self.buttons[self.first_index // self.grid_size][self.first_index % self.grid_size]['text'] = ''
+            self.buttons[self.second_index // self.grid_size][self.second_index % self.grid_size]['text'] = ''
+        
+        self.first_card = None
+        self.second_card = None
+
+    def update_pairs_label(self):
+        self.pairs_label.config(text=f'คู่ที่จับได้: {self.pairs_found} / {self.grid_size * self.grid_size // 2}')
+
+    def reveal_cards(self):
+        # แสดงการ์ดทั้งหมด
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                self.buttons[i][j]['text'] = self.cards[i * self.grid_size + j]
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = MemoryGame(root)
+    root.mainloop()
